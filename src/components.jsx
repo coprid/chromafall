@@ -114,23 +114,17 @@ export const TopBar = ({ g, best, t, soundOn, onToggleSound, onSettings }) => (
 
 // ---- панель превью: HOLD + три следующие ----
 
-export const PreviewRow = ({ g, settings, t }) => (
+export const PreviewRow = ({ g, settings }) => (
   <div className="preview">
     {settings.hold && (
-      <div className="pv">
-        <span className="label">{t('hold')}</span>
-        <div className="slot small"><Mini type={g.held} /></div>
-      </div>
+      <div className="slot small"><Mini type={g.held} /></div>
     )}
-    <div className="pv">
-      <span className="label">{t('next')}</span>
-      <div className="queue">
-        {g.queue.slice(0, 3).map((type, i) => (
-          <div key={`${i}-${type}`} className={i === 0 ? 'q0' : 'qdim'}>
-            <Mini type={type} />
-          </div>
-        ))}
-      </div>
+    <div className="queue">
+      {g.queue.slice(0, 3).map((type, i) => (
+        <div key={`${i}-${type}`} className={i === 0 ? 'q0' : 'qdim'}>
+          <Mini type={type} />
+        </div>
+      ))}
     </div>
   </div>
 );
