@@ -98,20 +98,34 @@ export const createGame = () => {
     queue, bag, held: null, canHold: true,
     score: 0, lines: 0, level: 1, status: 'playing',
     clearing: null, dropCounter: 0, lockTimer: 0, resets: 0,
-    _sfx: null, _sfxId: 0,
+    combo: 0, popup: null,
+    _sfx: null, _sfxId: 0, _sfxLvl: 0,
   };
 };
 
-const sfx = (g, name) => ({ _sfx: name, _sfxId: g._sfxId + 1 });
+const sfx = (g, name, lvl) => ({ _sfx: name, _sfxId: g._sfxId + 1, _sfxLvl: lvl || 0 });
+const comboMult = (combo) => (combo >= 4 ? 2.5 : combo === 3 ? 2 : combo === 2 ? 1.5 : 1);
+const popText = (n, combo) => {
+  let txt = n === 4 ? 'TETRIS!' : n === 3 ? 'TRIPLE!' : n === 2 ? 'DOUBLE!' : (combo >= 2 ? 'COMBO!' : null);
+  if (!txt) return null;
+  if (combo >= 2) txt += ` ✦ ×${comboMult(combo)}`;
+  return txt;
+};
 
 const lock = (g) => {
   const board = g.board.map((r) => r.slice());
   for (const [r, c] of cellsOf(g.current)) if (r >= 0 && r < ROWS) board[r][c] = g.current.type;
   const rows = fullRows(board);
   if (rows.length) {
-    return { ...g, board, clearing: rows, current: null, ...sfx(g, rows.length === 4 ? 'tetris' : 'clear') };
+    const combo = g.combo + 1;
+    const text = popText(rows.length, combo);
+    return {
+      ...g, board, clearing: rows, current: null, combo,
+      popup: text ? { text, id: (g.popup ? g.popup.id : 0) + 1 } : g.popup,
+      ...sfx(g, rows.length === 4 ? 'tetris' : 'clear', combo),
+    };
   }
-  return spawn({ ...g, board, current: null });
+  return spawn({ ...g, board, current: null, combo: 0 });
 };
 
 export const applyClear = (g) => {
@@ -120,9 +134,10 @@ export const applyClear = (g) => {
   while (board.length < ROWS) board.unshift(emptyRow());
   const n = rows.length;
   const lines = g.lines + n;
+  const gained = Math.round(LINE_SCORE[n] * g.level * comboMult(g.combo));
   return spawn({
     ...g, board, clearing: null,
-    score: g.score + LINE_SCORE[n] * g.level,
+    score: g.score + gained,
     lines, level: Math.floor(lines / 10) + 1,
   });
 };

@@ -72,6 +72,7 @@ export const Board = ({ g, settings }) => {
             </div>
           ))
         )}
+        {g.popup && <div key={g.popup.id} className="popup">{g.popup.text}</div>}
       </div>
     </div>
   );

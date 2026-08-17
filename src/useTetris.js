@@ -41,7 +41,7 @@ export default function useTetris(settings, audio, uiRef) {
   // ---- sound + haptics from the transient _sfxId ----
   useEffect(() => {
     if (!g._sfx) return;
-    playRef.current(g._sfx);
+    playRef.current(g._sfx, g._sfxLvl || 0);
     const vib = { hard: [20], clear: [15, 30, 15], tetris: [20, 40, 20, 40, 40], over: [60, 40, 120], hold: [10] };
     const pat = vib[g._sfx];
     if (pat && vibRef.current && navigator.vibrate) navigator.vibrate(pat);
