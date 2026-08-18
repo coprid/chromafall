@@ -67,7 +67,19 @@ export default function useTetris(settings, audio, uiRef) {
     p.status === 'paused' ? { ...p, status: 'playing' } : p
   )), []);
 
-  // ---- keyboard ----
+// ---- auto-pause on focus loss (required by game portals) ----
+useEffect(() => {
+  const pause = () => setG((p) => (p.status === 'playing' ? { ...p, status: 'paused' } : p));
+  const onVis = () => { if (document.hidden) pause(); };
+  window.addEventListener('blur', pause);
+  document.addEventListener('visibilitychange', onVis);
+  return () => {
+    window.removeEventListener('blur', pause);
+    document.removeEventListener('visibilitychange', onVis);
+  };
+}, []);
+
+// ---- keyboard ----
   useEffect(() => {
     const onKey = (e) => {
       if (uiRef && uiRef.current && uiRef.current.modal) return;

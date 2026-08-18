@@ -210,7 +210,7 @@ export const tick = (g, dt) => {
   let lockTimer = g.lockTimer, resets = g.resets, drop = g.dropCounter;
   if (gr) {
     lockTimer += dt;
-    if (lockTimer >= LOCK_DELAY || resets > MAX_RESETS) return lock(g);
+    if (lockTimer >= LOCK_DELAY || resets >= MAX_RESETS) return lock(g);
     drop = 0;
     return { ...g, lockTimer, resets, dropCounter: drop };
   }
