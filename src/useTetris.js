@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as E from './engine';
 
 const BEST_KEY = 'chromafall_best';
+const DAS = 170;    // hold ms before auto-repeat kicks in
+const ARR = 40;     // ms between auto-repeat steps
+const SOFT_MS = 45; // soft drop repeat interval
 
 export default function useTetris(settings, audio, uiRef) {
   const [g, setG] = useState(() => E.createGame());
@@ -79,28 +82,48 @@ useEffect(() => {
   };
 }, []);
 
-// ---- keyboard ----
-  useEffect(() => {
-    const onKey = (e) => {
-      if (uiRef && uiRef.current && uiRef.current.modal) return;
-      const k = e.key.toLowerCase();
-      const map = {
-        arrowleft: moveLeft, a: moveLeft,
-        arrowright: moveRight, d: moveRight,
-        arrowdown: soft, s: soft,
-        arrowup: rotateCW, w: rotateCW, x: rotateCW,
-        z: rotateCCW, ' ': hard, c: doHold, shift: doHold, p: togglePause,
-      };
-      const fn = map[k];
-      if (fn) {
-        e.preventDefault();
-        const autoKeys = ['arrowdown', 'arrowleft', 'arrowright', 's', 'a', 'd'];
-        if (!e.repeat || autoKeys.includes(k)) fn();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [moveLeft, moveRight, soft, rotateCW, rotateCCW, hard, doHold, togglePause, uiRef]);
+// ---- keyboard with own DAS/ARR (independent of OS key repeat) ----
+useEffect(() => {
+const timers = { das: null, arr: null };
+const stopAuto = () => { clearTimeout(timers.das); clearInterval(timers.arr); timers.das = timers.arr = null; };
+const startAuto = (fn, delay, rate) => {
+stopAuto();
+if (delay > 0) timers.das = setTimeout(() => { timers.arr = setInterval(fn, rate); }, delay);
+else timers.arr = setInterval(fn, rate);
+};
+const onKey = (e) => {
+if (uiRef && uiRef.current && uiRef.current.modal) return;
+if (e.repeat) return; // we handle repeats ourselves
+const k = e.key.toLowerCase();
+const map = {
+arrowleft: moveLeft, a: moveLeft,
+arrowright: moveRight, d: moveRight,
+arrowdown: soft, s: soft,
+arrowup: rotateCW, w: rotateCW, x: rotateCW,
+z: rotateCCW, ' ': hard, c: doHold, shift: doHold, p: togglePause,
+};
+const fn = map[k];
+if (!fn) return;
+e.preventDefault();
+fn(); // first step fires immediately
+if (k === 'arrowleft' || k === 'a' || k === 'arrowright' || k === 'd') startAuto(fn, DAS, ARR);
+if (k === 'arrowdown' || k === 's') startAuto(fn, 0, SOFT_MS);
+};
+const onUp = (e) => {
+const k = e.key.toLowerCase();
+if (['arrowleft', 'a', 'arrowright', 'd', 'arrowdown', 's'].includes(k)) stopAuto();
+};
+const onBlur = () => stopAuto();
+window.addEventListener('keydown', onKey);
+window.addEventListener('keyup', onUp);
+window.addEventListener('blur', onBlur);
+return () => {
+stopAuto();
+window.removeEventListener('keydown', onKey);
+window.removeEventListener('keyup', onUp);
+window.removeEventListener('blur', onBlur);
+};
+}, [moveLeft, moveRight, soft, rotateCW, rotateCCW, hard, doHold, togglePause, uiRef]);
 
   return {
     g, best,
